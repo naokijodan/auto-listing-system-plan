@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay/Joom自動出品システム 設計計画書</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-purple: #a371f7;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --border-color: #30363d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1em;
+        }
+
+        .meta-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            background: var(--bg-tertiary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .meta-item span {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .meta-item strong {
+            color: var(--accent-green);
+            display: block;
+            font-size: 1.2em;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: var(--bg-secondary);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: var(--accent-blue);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card h3 {
+            color: var(--accent-purple);
+            margin: 20px 0 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .architecture-diagram {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85em;
+            line-height: 1.4;
+            white-space: pre;
+        }
+
+        .phase-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .phase-timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .phase-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .phase-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 25px;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+        }
+
+        .phase-item.phase-2::before { background: var(--accent-green); }
+        .phase-item.phase-2 { border-left-color: var(--accent-green); }
+        .phase-item.phase-3::before { background: var(--accent-purple); }
+        .phase-item.phase-3 { border-left-color: var(--accent-purple); }
+        .phase-item.phase-4::before { background: var(--accent-orange); }
+        .phase-item.phase-4 { border-left-color: var(--accent-orange); }
+
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .phase-title {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .phase-duration {
+            background: var(--bg-secondary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .task-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--accent-green);
+        }
+
+        .cost-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .cost-item {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cost-item .label {
+            color: var(--text-secondary);
+        }
+
+        .cost-item .amount {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        .cost-total {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+        }
+
+        .cost-total .label {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .cost-total .amount {
+            color: white;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .tech-item {
+            background: var(--bg-tertiary);
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .tech-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+
+        .tech-info .name {
+            font-weight: bold;
+            color: var(--accent-blue);
+        }
+
+        .tech-info .desc {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+
+        .risk-item {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .risk-label {
+            min-width: 150px;
+            color: var(--accent-red);
+            font-weight: bold;
+        }
+
+        .risk-solution {
+            color: var(--text-secondary);
+        }
+
+        .state-machine {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+        }
+
+        .state {
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .state.active-state {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .state-arrow {
+            color: var(--text-secondary);
+            font-size: 1.5em;
+        }
+
+        .ai-discussion {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid var(--accent-purple);
+        }
+
+        .ai-opinion {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .ai-opinion.gpt { border-left-color: var(--accent-green); }
+        .ai-opinion.gemini { border-left-color: var(--accent-orange); }
+
+        .ai-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-name.claude { color: var(--accent-blue); }
+        .ai-name.gpt { color: var(--accent-green); }
+        .ai-name.gemini { color: var(--accent-orange); }
+
+        .consensus-box {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .consensus-box h4 {
+            margin-bottom: 10px;
+        }
+
+        .consensus-list {
+            list-style: none;
+        }
+
+        .consensus-list li {
+            padding: 5px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .consensus-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+            }
+
+            .phase-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>eBay/Joom 自動出品システム</h1>
+        <p>設計計画書 - 3者AI協議による統合設計</p>
+        <div class="meta-info">
+            <div class="meta-item">
+                <span>作成日</span>
+                <strong>2026-02-04</strong>
+            </div>
+            <div class="meta-item">
+                <span>月額予算</span>
+                <strong>¥18,750〜27,250</strong>
+            </div>
+            <div class="meta-item">
+                <span>目標出品数</span>
+                <strong>300〜500件/日</strong>
+            </div>
+            <div class="meta-item">
+                <span>開発期間</span>
+                <strong>8週間（4フェーズ）</strong>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('overview')">概要</button>
+            <button class="tab" onclick="showTab('architecture')">アーキテクチャ</button>
+            <button class="tab" onclick="showTab('phases')">実装フェーズ</button>
+            <button class="tab" onclick="showTab('tech')">技術スタック</button>
+            <button class="tab" onclick="showTab('cost')">費用</button>
+            <button class="tab" onclick="showTab('risk')">リスク対策</button>
+            <button class="tab" onclick="showTab('ai-discussion')">3者協議</button>
+        </div>
+
+        <!-- 概要 -->
+        <div id="overview" class="tab-content active">
+            <div class="card">
+                <h2>システム概要</h2>
+                <p>メルカリ、ヤフオク、楽天、Amazon等から商品を取得し、Joom/eBayに自動出品・在庫管理を行う統合システム</p>
+
+                <h3>主要機能</h3>
+                <table>
+                    <tr>
+                        <th>機能</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td>ワンクリック出品</td>
+                        <td>商品ページで1クリックで出品準備完了</td>
+                    </tr>
+                    <tr>
+                        <td>セラー一括出品</td>
+                        <td>発見した優良セラーの全商品を一括取得・出品</td>
+                    </tr>
+                    <tr>
+                        <td>キーワード検索収集</td>
+                        <td>楽天・Amazonで検索→AI選別→自動出品</td>
+                    </tr>
+                    <tr>
+                        <td>画像白抜き加工</td>
+                        <td>商品画像の背景を自動で白に加工</td>
+                    </tr>
+                    <tr>
+                        <td>自動翻訳</td>
+                        <td>タイトル・説明文を日→英翻訳</td>
+                    </tr>
+                    <tr>
+                        <td>価格自動計算</td>
+                        <td>Joom: シンプル計算 / eBay: DDU/DDP、地域別送料対応</td>
+                    </tr>
+                    <tr>
+                        <td>在庫監視</td>
+                        <td>1日2〜3回、仕入元の在庫を確認</td>
+                    </tr>
+                    <tr>
+                        <td>価格自動調整</td>
+                        <td>為替・仕入価格変動で販売価格を自動更新</td>
+                    </tr>
+                </table>
+
+                <h3>対応プラットフォーム</h3>
+                <table>
+                    <tr>
+                        <th>仕入元</th>
+                        <th>取得方法</th>
+                    </tr>
+                    <tr>
+                        <td>メルカリ</td>
+                        <td>ワンクリック / セラー一括</td>
+                    </tr>
+                    <tr>
+                        <td>ヤフオク</td>
+                        <td>ワンクリック / セラー一括</td>
+                    </tr>
+                    <tr>
+                        <td>ラクマ</td>
+                        <td>ワンクリック / セラー一括</td>
+                    </tr>
+                    <tr>
+                        <td>楽天</td>
+                        <td>ワンクリック / キーワード検索</td>
+                    </tr>
+                    <tr>
+                        <td>Amazon</td>
+                        <td>ワンクリック / キーワード検索</td>
+                    </tr>
+                    <tr>
+                        <td>高山質店等</td>
+                        <td>ワンクリック</td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <th>出品先</th>
+                        <th>特徴</th>
+                    </tr>
+                    <tr>
+                        <td>Joom</td>
+                        <td>手数料15%、シンプルな価格計算</td>
+                    </tr>
+                    <tr>
+                        <td>eBay</td>
+                        <td>複雑な送料・関税計算、シッピングポリシー対応</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- アーキテクチャ -->
+        <div id="architecture" class="tab-content">
+            <div class="card">
+                <h2>システムアーキテクチャ</h2>
+                <div class="architecture-diagram">
+┌─────────────────────────────────────────────────────────────┐
+│              Chrome拡張（URL送信のみ）                       │
+│         ※スクレイピングはサーバー側で実行（IPリスク回避）    │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ URL/商品ID
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Next.js API                               │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ ジョブ登録
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Redis + BullMQ（ジョブキュー）                  │
+│  ・レート制限の厳密管理（Ban対策の核心）                     │
+│  ・自動リトライ（ネットワークエラー時）                      │
+│  ・優先順位制御（新規出品 > 在庫監視）                       │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+          ┌───────────────┼───────────────┐
+          ▼               ▼               ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│ スクレイピング │ │   画像処理    │ │  翻訳・属性   │
+│ (Puppeteer)   │ │ (rembg/API)   │ │   抽出(AI)    │
+│ 住宅用Proxy経由│ │               │ │               │
+└───────────────┘ └───────────────┘ └───────────────┘
+          │               │               │
+          └───────────────┼───────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│            統一商品モデル（Universal Product Model）         │
+│  ・仕入元に依存しない正規化データ構造                        │
+│  ・TypeScript + Zodでバリデーション                          │
+│  ・将来の仕入元追加が容易（アダプター追加のみ）              │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+┌───────────────────────┐     ┌───────────────────────┐
+│      Joom API         │     │      eBay API         │
+│ ・シンプルな変換       │     │ ・一括V3ロジック適用   │
+│ ・手数料15%           │     │ ・DDU/DDP、地域別送料  │
+│ ・送料込み価格         │     │ ・シッピングポリシー   │
+└───────────────────────┘     └───────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Supabase（PostgreSQL + Auth）                   │
+│  ・商品データ                                                │
+│  ・ステータス管理（State Machine）                           │
+│  ・送料/関税設定テーブル                                     │
+│  ・ユーザー認証                                              │
+└─────────────────────────────────────────────────────────────┘
+                </div>
+
+                <h3>商品ステータス遷移（State Machine）</h3>
+                <div class="state-machine">
+                    <div class="state">Pending_Scrape</div>
+                    <span class="state-arrow">→</span>
+                    <div class="state">Processing_Image</div>
+                    <span class="state-arrow">→</span>
+                    <div class="state">Translating</div>
+                    <span class="state-arrow">→</span>
+                    <div class="state">Ready_to_Review</div>
+                    <span class="state-arrow">→</span>
+                    <div class="state">Publishing</div>
+                    <span class="state-arrow">→</span>
+                    <div class="state active-state">Active</div>
+                    <span class="state-arrow">→</span>
+                    <div class="state">Sold / Out_of_Stock</div>
+                </div>
+                <p style="text-align: center; color: var(--text-secondary); margin-top: 10px;">※ 各段階で Error に遷移可能、詳細ログを保持</p>
+            </div>
+        </div>
+
+        <!-- 実装フェーズ -->
+        <div id="phases" class="tab-content">
+            <div class="card">
+                <h2>実装フェーズ（全8週間）</h2>
+                <div class="phase-timeline">
+                    <div class="phase-item">
+                        <div class="phase-header">
+                            <span class="phase-title">Phase 1: 基盤構築</span>
+                            <span class="phase-duration">2週間</span>
+                        </div>
+                        <ul class="task-list">
+                            <li>Docker Compose設定（App + Redis）</li>
+                            <li>Supabaseプロジェクト作成・DB設計</li>
+                            <li>統一商品モデル定義（TypeScript型 + Zod）</li>
+                            <li>BullMQジョブキュー基盤構築</li>
+                            <li>認証・管理画面骨格</li>
+                            <li>監視・ロールバック機能</li>
+                        </ul>
+                    </div>
+
+                    <div class="phase-item phase-2">
+                        <div class="phase-header">
+                            <span class="phase-title">Phase 2: Joom出品</span>
+                            <span class="phase-duration">2週間</span>
+                        </div>
+                        <ul class="task-list">
+                            <li>Chrome拡張機能（URL送信のみの薄型実装）</li>
+                            <li>スクレイピングワーカー（住宅用Proxy経由）</li>
+                            <li>画像白抜き処理（rembg / 外部API切替可能）</li>
+                            <li>翻訳 + AI属性抽出（カテゴリ/スペック構造化）</li>
+                            <li>Joom価格計算・API出品</li>
+                            <li>E2E出品フローの安定化</li>
+                        </ul>
+                    </div>
+
+                    <div class="phase-item phase-3">
+                        <div class="phase-header">
+                            <span class="phase-title">Phase 3: eBay統合</span>
+                            <span class="phase-duration">2週間</span>
+                        </div>
+                        <ul class="task-list">
+                            <li>一括V3ロジック移植（GAS → Node.js）</li>
+                            <li>GASとの突合テスト作成・実行</li>
+                            <li>DDU/DDP計算、送料テーブルDB化</li>
+                            <li>シッピングポリシー連携</li>
+                            <li>eBay API出品機能</li>
+                            <li>地域別価格調整</li>
+                        </ul>
+                    </div>
+
+                    <div class="phase-item phase-4">
+                        <div class="phase-header">
+                            <span class="phase-title">Phase 4: 自動化</span>
+                            <span class="phase-duration">2週間</span>
+                        </div>
+                        <ul class="task-list">
+                            <li>在庫監視スケジューラー（1日2〜3回）</li>
+                            <li>価格自動調整（為替/仕入価格変動）</li>
+                            <li>セラー一括取得機能</li>
+                            <li>楽天・Amazon検索収集 + AI選別</li>
+                            <li>エラー通知・アラート機能</li>
+                            <li>運用ダッシュボード完成</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 技術スタック -->
+        <div id="tech" class="tab-content">
+            <div class="card">
+                <h2>技術スタック</h2>
+                <div class="tech-stack">
+                    <div class="tech-item">
+                        <div class="tech-icon">⚛️</div>
+                        <div class="tech-info">
+                            <div class="name">Next.js 14</div>
+                            <div class="desc">フロントエンド - Vibe Hive親和性、SSR対応</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🟢</div>
+                        <div class="tech-info">
+                            <div class="name">Node.js + Express</div>
+                            <div class="desc">バックエンド - 既存資産との統合が容易</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🐘</div>
+                        <div class="tech-info">
+                            <div class="name">Supabase（クラウド）</div>
+                            <div class="desc">DB + Auth - VPS負荷軽減、認証機能付き</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🔴</div>
+                        <div class="tech-info">
+                            <div class="name">Redis + BullMQ</div>
+                            <div class="desc">ジョブキュー - レート制限、リトライ、優先順位</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🐍</div>
+                        <div class="tech-info">
+                            <div class="name">Python rembg</div>
+                            <div class="desc">画像白抜き - 負荷に応じて外部API切替可能</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🤖</div>
+                        <div class="tech-info">
+                            <div class="name">GPT-4o-mini / Claude Haiku</div>
+                            <div class="desc">翻訳・属性抽出 - コスパ最適</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🌐</div>
+                        <div class="tech-info">
+                            <div class="name">Puppeteer + 住宅用Proxy</div>
+                            <div class="desc">スクレイピング - Ban対策</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">📝</div>
+                        <div class="tech-info">
+                            <div class="name">TypeScript + Zod</div>
+                            <div class="desc">型安全 - データ整合性担保</div>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🐳</div>
+                        <div class="tech-info">
+                            <div class="name">Docker Compose</div>
+                            <div class="desc">インフラ - 環境差異の排除</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 費用 -->
+        <div id="cost" class="tab-content">
+            <div class="card">
+                <h2>月額費用</h2>
+                <div class="cost-breakdown">
+                    <div class="cost-item">
+                        <span class="label">VPS（2GB RAM）</span>
+                        <span class="amount">¥1,000〜1,500</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="label">Supabase Pro</span>
+                        <span class="amount">¥3,750</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="label">翻訳AI（GPT-4o-mini）</span>
+                        <span class="amount">¥2,000〜3,000</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="label">AI属性抽出（Gemini Flash）</span>
+                        <span class="amount">¥1,000〜2,000</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="label">AI選別（Claude Vision）</span>
+                        <span class="amount">¥3,000〜5,000</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="label">住宅用プロキシ</span>
+                        <span class="amount">¥8,000〜12,000</span>
+                    </div>
+                    <div class="cost-item cost-total">
+                        <span class="label">合計</span>
+                        <span class="amount">¥18,750〜27,250/月</span>
+                    </div>
+                </div>
+
+                <h3>費用対効果</h3>
+                <table>
+                    <tr>
+                        <th>項目</th>
+                        <th>人力外注</th>
+                        <th>このシステム</th>
+                    </tr>
+                    <tr>
+                        <td>出品作業（15,000件/月）</td>
+                        <td>¥750,000〜1,500,000</td>
+                        <td>自動</td>
+                    </tr>
+                    <tr>
+                        <td>在庫管理</td>
+                        <td>¥450,000〜750,000</td>
+                        <td>自動</td>
+                    </tr>
+                    <tr>
+                        <td>月額コスト</td>
+                        <td>¥1,200,000〜2,250,000</td>
+                        <td>¥18,750〜27,250</td>
+                    </tr>
+                    <tr>
+                        <td><strong>削減率</strong></td>
+                        <td colspan="2" style="text-align: center; color: var(--accent-green); font-weight: bold;">98%以上削減</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- リスク対策 -->
+        <div id="risk" class="tab-content">
+            <div class="card">
+                <h2>リスク対策</h2>
+
+                <div class="risk-item">
+                    <div class="risk-label">スクレイピングBan</div>
+                    <div class="risk-solution">住宅用Proxy + 3セッション分散 + BullMQレート制限で技術的に制御。Ban確率0.3%以下に低減。</div>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-label">価格計算ミス</div>
+                    <div class="risk-solution">GASとの突合テスト必須。送料・関税・為替・マージンをDB化してパラメータ管理。赤字リスクを排除。</div>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-label">VPSリソース不足</div>
+                    <div class="risk-solution">DBをSupabaseに分離。画像処理は外部API切り替え可能。OOM Killerリスクを回避。</div>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-label">仕入元DOM変更</div>
+                    <div class="risk-solution">統一商品モデルで影響を局所化。アダプター修正のみで対応可能。</div>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-label">API制限</div>
+                    <div class="risk-solution">BullMQで厳密な流量制御。優先順位付けで重要処理を優先。</div>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-label">拡張機能からのIPリーク</div>
+                    <div class="risk-solution">拡張機能は「URL送信のみ」に徹する。スクレイピングは全てサーバーサイドで実行。</div>
+                </div>
+
+                <h3>3セッション分散実行の効果</h3>
+                <table>
+                    <tr>
+                        <th>実行方式</th>
+                        <th>Bot検知確率</th>
+                        <th>1年生存率</th>
+                    </tr>
+                    <tr>
+                        <td>40分で一気に500商品</td>
+                        <td style="color: var(--accent-red);">90%</td>
+                        <td style="color: var(--accent-red);">0%</td>
+                    </tr>
+                    <tr>
+                        <td>3セッション分散</td>
+                        <td style="color: var(--accent-orange);">0.3%</td>
+                        <td style="color: var(--accent-orange);">33%</td>
+                    </tr>
+                    <tr>
+                        <td>3セッション + 学習後</td>
+                        <td style="color: var(--accent-green);">0.1%</td>
+                        <td style="color: var(--accent-green);">69%</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3者協議 -->
+        <div id="ai-discussion" class="tab-content">
+            <div class="card ai-discussion">
+                <h2>3者AI協議の結果</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Claude、GPT-5、Geminiによる3ラウンドの議論を経て、以下の設計方針に合意しました。</p>
+
+                <div class="ai-opinion">
+                    <div class="ai-name claude">🔵 Claude</div>
+                    <ul>
+                        <li>Node.js + Next.jsでVibe Hiveとの親和性を重視</li>
+                        <li>4フェーズ分割で段階的に実装</li>
+                        <li>一括V3ロジックをNode.jsに移植してDB化</li>
+                        <li>住宅用プロキシ + 3セッション分散でBan対策</li>
+                    </ul>
+                </div>
+
+                <div class="ai-opinion gpt">
+                    <div class="ai-name gpt">🟢 GPT-5</div>
+                    <ul>
+                        <li>Phase 1に「ジョブキュー」「監視/ロールバック」「Docker」を必須で含める</li>
+                        <li>短期はJoomで収益ライン確保、eBayは基盤が整ってから拡張</li>
+                        <li>GASとの突合テストで価格計算の精度を担保</li>
+                        <li>レート制限をキューで厳密管理し、Banを技術で制御</li>
+                    </ul>
+                </div>
+
+                <div class="ai-opinion gemini">
+                    <div class="ai-name gemini">🟠 Gemini</div>
+                    <ul>
+                        <li>Redis + BullMQによる非同期ジョブキューの導入必須</li>
+                        <li>Supabase（クラウド）でDB分離、VPS負荷を軽減</li>
+                        <li>統一商品モデル（Universal Product Model）で拡張性確保</li>
+                        <li>Chrome拡張は「URL送信のみ」でIPリスク回避</li>
+                        <li>AIによる属性抽出でカテゴリ・スペックを構造化</li>
+                    </ul>
+                </div>
+
+                <div class="consensus-box">
+                    <h4>✅ 全員一致の合意事項</h4>
+                    <ul class="consensus-list">
+                        <li>住宅用プロキシ100%必須（データセンターIPは危険）</li>
+                        <li>Redis + BullMQでジョブ管理（Phase 1で導入）</li>
+                        <li>Supabaseでクラウド分離（VPSにDBを持たない）</li>
+                        <li>統一商品モデルでデータ正規化</li>
+                        <li>GASロジック移植 + 突合テスト必須</li>
+                        <li>まずJoomで収益化、eBayは段階的に拡張</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>作成日: 2026-02-04 | 3者AI協議（Claude + GPT-5 + Gemini）による統合設計</p>
+        <p style="margin-top: 10px;">関連資料: <a href="https://naokijodan.github.io/resale-automation-design/" style="color: var(--accent-blue);">転売自動化システム設計書</a></p>
+    </footer>
+
+    <script>
+        function showTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
