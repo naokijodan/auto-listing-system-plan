@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>実装計画書 - eBay/Joom自動出品システム</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-purple: #a371f7;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --accent-cyan: #39c5cf;
+            --border-color: #30363d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: var(--accent-purple);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: var(--bg-secondary);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: var(--accent-green);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card h3 {
+            color: var(--accent-cyan);
+            margin: 20px 0 10px;
+        }
+
+        .card h4 {
+            color: var(--accent-purple);
+            margin: 15px 0 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        pre {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .file-tree {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .file-tree .folder {
+            color: var(--accent-blue);
+        }
+
+        .file-tree .file {
+            color: var(--text-secondary);
+        }
+
+        .file-tree .comment {
+            color: var(--accent-green);
+            font-style: italic;
+        }
+
+        .schema-block {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0d1117 100%);
+            border: 1px solid var(--accent-purple);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .schema-block h4 {
+            color: var(--accent-purple);
+            margin-bottom: 15px;
+        }
+
+        .field-list {
+            list-style: none;
+        }
+
+        .field-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .field-list li:last-child {
+            border-bottom: none;
+        }
+
+        .field-name {
+            color: var(--accent-cyan);
+            font-family: monospace;
+        }
+
+        .field-type {
+            color: var(--accent-orange);
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .field-desc {
+            color: var(--text-secondary);
+            font-size: 0.85em;
+        }
+
+        .queue-card {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .queue-card.priority-1 { border-left-color: var(--accent-red); }
+        .queue-card.priority-2 { border-left-color: var(--accent-orange); }
+        .queue-card.priority-3 { border-left-color: var(--accent-green); }
+        .queue-card.priority-4 { border-left-color: var(--accent-blue); }
+        .queue-card.priority-5 { border-left-color: var(--accent-purple); }
+
+        .queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .queue-name {
+            font-weight: bold;
+            color: var(--accent-cyan);
+            font-family: monospace;
+        }
+
+        .queue-priority {
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+
+        .queue-priority.p1 { background: var(--accent-red); color: white; }
+        .queue-priority.p2 { background: var(--accent-orange); color: white; }
+        .queue-priority.p3 { background: var(--accent-green); color: white; }
+        .queue-priority.p4 { background: var(--accent-blue); color: white; }
+        .queue-priority.p5 { background: var(--accent-purple); color: white; }
+
+        .queue-settings {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .consensus-box {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            margin: 20px 0;
+        }
+
+        .consensus-box h4 {
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .consensus-list {
+            list-style: none;
+        }
+
+        .consensus-list li {
+            padding: 5px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .consensus-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+        }
+
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+        }
+
+        .step-list li {
+            counter-increment: step-counter;
+            padding: 15px 15px 15px 60px;
+            position: relative;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            background: var(--accent-green);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .docker-service {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .docker-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+
+        .docker-info .name {
+            font-weight: bold;
+            color: var(--accent-cyan);
+        }
+
+        .docker-info .port {
+            color: var(--accent-orange);
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .docker-info .desc {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .env-table {
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .env-table td:first-child {
+            color: var(--accent-cyan);
+        }
+
+        .env-table td:nth-child(2) {
+            color: var(--accent-orange);
+        }
+
+        .warning-box {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid var(--accent-red);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 15px 0;
+        }
+
+        .warning-box::before {
+            content: '⚠️ ';
+        }
+
+        .info-box {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid var(--accent-blue);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 15px 0;
+        }
+
+        .info-box::before {
+            content: '💡 ';
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .nav-links a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid var(--accent-blue);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+            }
+
+            .queue-settings {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>実装計画書（詳細版）</h1>
+        <p>eBay/Joom自動出品システム - Phase 1 基盤構築</p>
+        <span class="badge">3者AI協議 統合版</span>
+        <div class="nav-links">
+            <a href="index.html">← 設計計画書に戻る</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('structure')">プロジェクト構成</button>
+            <button class="tab" onclick="showTab('docker')">Docker環境</button>
+            <button class="tab" onclick="showTab('database')">DB設計</button>
+            <button class="tab" onclick="showTab('schema')">型定義・スキーマ</button>
+            <button class="tab" onclick="showTab('queue')">ジョブキュー</button>
+            <button class="tab" onclick="showTab('env')">環境変数</button>
+            <button class="tab" onclick="showTab('roadmap')">実装ロードマップ</button>
+        </div>
+
+        <!-- プロジェクト構成 -->
+        <div id="structure" class="tab-content active">
+            <div class="card">
+                <h2>プロジェクト構成（Turborepo モノレポ）</h2>
+
+                <div class="info-box">
+                    モノレポ構成により、共有型・スキーマ・ユーティリティの同期コストを最小化。Turborepoでビルドキャッシュと並列実行を実現。
+                </div>
+
+                <div class="file-tree">
+<span class="folder">auto-listing-system/</span>
+├── <span class="file">docker-compose.yml</span>          <span class="comment"># 開発環境（Postgres, Redis, MinIO）</span>
+├── <span class="file">turbo.json</span>                  <span class="comment"># Turborepo設定</span>
+├── <span class="file">package.json</span>                <span class="comment"># ワークスペース定義</span>
+├── <span class="file">.env.example</span>                <span class="comment"># 環境変数テンプレート</span>
+├── <span class="file">.gitignore</span>
+│
+├── <span class="folder">apps/</span>                         <span class="comment"># アプリケーション層</span>
+│   ├── <span class="folder">web/</span>                      <span class="comment"># Next.js フロントエンド</span>
+│   │   ├── <span class="file">package.json</span>
+│   │   ├── <span class="folder">src/</span>
+│   │   │   ├── <span class="folder">app/</span>              <span class="comment"># App Router</span>
+│   │   │   ├── <span class="folder">components/</span>       <span class="comment"># UIコンポーネント</span>
+│   │   │   └── <span class="folder">lib/</span>              <span class="comment"># クライアントユーティリティ</span>
+│   │   └── <span class="file">next.config.js</span>
+│   │
+│   ├── <span class="folder">api/</span>                      <span class="comment"># Express API Gateway</span>
+│   │   ├── <span class="file">package.json</span>
+│   │   ├── <span class="folder">src/</span>
+│   │   │   ├── <span class="folder">routes/</span>           <span class="comment"># エンドポイント定義</span>
+│   │   │   ├── <span class="folder">middleware/</span>       <span class="comment"># 認証・バリデーション</span>
+│   │   │   ├── <span class="folder">services/</span>         <span class="comment"># ビジネスロジック</span>
+│   │   │   └── <span class="file">index.ts</span>
+│   │   └── <span class="file">Dockerfile</span>
+│   │
+│   └── <span class="folder">worker/</span>                   <span class="comment"># BullMQ ワーカー</span>
+│       ├── <span class="file">package.json</span>
+│       ├── <span class="folder">src/</span>
+│       │   ├── <span class="folder">processors/</span>       <span class="comment"># ジョブプロセッサー</span>
+│       │   │   ├── <span class="file">scrape.ts</span>
+│       │   │   ├── <span class="file">image.ts</span>
+│       │   │   ├── <span class="file">translate.ts</span>
+│       │   │   ├── <span class="file">publish.ts</span>
+│       │   │   └── <span class="file">inventory.ts</span>
+│       │   ├── <span class="folder">queues/</span>           <span class="comment"># キュー定義</span>
+│       │   ├── <span class="file">graceful-shutdown.ts</span>
+│       │   └── <span class="file">index.ts</span>
+│       └── <span class="file">Dockerfile</span>
+│
+├── <span class="folder">packages/</span>                     <span class="comment"># 共有パッケージ</span>
+│   ├── <span class="folder">database/</span>                 <span class="comment"># Prisma クライアント</span>
+│   │   ├── <span class="file">package.json</span>
+│   │   ├── <span class="folder">prisma/</span>
+│   │   │   ├── <span class="file">schema.prisma</span>
+│   │   │   └── <span class="folder">migrations/</span>
+│   │   └── <span class="folder">src/</span>
+│   │       └── <span class="file">client.ts</span>
+│   │
+│   ├── <span class="folder">schema/</span>                   <span class="comment"># Zod スキーマ定義</span>
+│   │   ├── <span class="file">package.json</span>
+│   │   └── <span class="folder">src/</span>
+│   │       ├── <span class="file">product.ts</span>        <span class="comment"># 統一商品モデル</span>
+│   │       ├── <span class="file">listing.ts</span>        <span class="comment"># 出品情報</span>
+│   │       ├── <span class="file">job.ts</span>            <span class="comment"># ジョブペイロード</span>
+│   │       └── <span class="file">index.ts</span>
+│   │
+│   ├── <span class="folder">logger/</span>                   <span class="comment"># Pino 構造化ロガー</span>
+│   │   ├── <span class="file">package.json</span>
+│   │   └── <span class="folder">src/</span>
+│   │       └── <span class="file">index.ts</span>
+│   │
+│   └── <span class="folder">config/</span>                   <span class="comment"># 共通設定</span>
+│       ├── <span class="file">package.json</span>
+│       └── <span class="folder">src/</span>
+│           ├── <span class="file">env.ts</span>            <span class="comment"># 環境変数バリデーション</span>
+│           └── <span class="file">constants.ts</span>
+│
+├── <span class="folder">services/</span>                     <span class="comment"># 外部サービス連携</span>
+│   └── <span class="folder">image-processor/</span>          <span class="comment"># Python rembg サービス</span>
+│       ├── <span class="file">Dockerfile</span>
+│       ├── <span class="file">requirements.txt</span>
+│       └── <span class="folder">src/</span>
+│           ├── <span class="file">main.py</span>           <span class="comment"># FastAPI サーバー</span>
+│           └── <span class="file">processor.py</span>      <span class="comment"># 白抜き処理</span>
+│
+├── <span class="folder">extension/</span>                    <span class="comment"># Chrome拡張機能</span>
+│   ├── <span class="file">manifest.json</span>
+│   ├── <span class="folder">src/</span>
+│   │   ├── <span class="file">background.ts</span>
+│   │   ├── <span class="file">content.ts</span>
+│   │   └── <span class="file">popup.tsx</span>
+│   └── <span class="file">webpack.config.js</span>
+│
+└── <span class="folder">scripts/</span>                      <span class="comment"># ユーティリティスクリプト</span>
+    ├── <span class="file">bootstrap.sh</span>              <span class="comment"># 初回セットアップ</span>
+    ├── <span class="file">reset-db.sh</span>               <span class="comment"># DB リセット</span>
+    └── <span class="file">generate-fixtures.ts</span>      <span class="comment"># テストデータ生成</span>
+                </div>
+
+                <h3>依存関係のルール</h3>
+                <div class="warning-box">
+                    <strong>packages/* → apps/*</strong> の方向のみ許可。逆方向の依存は禁止。
+                </div>
+                <table>
+                    <tr>
+                        <th>パッケージ</th>
+                        <th>依存先</th>
+                        <th>依存元</th>
+                    </tr>
+                    <tr>
+                        <td><code>@als/schema</code></td>
+                        <td>zod のみ</td>
+                        <td>全アプリ</td>
+                    </tr>
+                    <tr>
+                        <td><code>@als/database</code></td>
+                        <td>prisma, @als/schema</td>
+                        <td>api, worker</td>
+                    </tr>
+                    <tr>
+                        <td><code>@als/logger</code></td>
+                        <td>pino</td>
+                        <td>全アプリ</td>
+                    </tr>
+                    <tr>
+                        <td><code>@als/config</code></td>
+                        <td>zod</td>
+                        <td>全アプリ</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Docker環境 -->
+        <div id="docker" class="tab-content">
+            <div class="card">
+                <h2>Docker Compose 構成</h2>
+
+                <div class="info-box">
+                    ローカル開発環境で本番と同等の構成を再現。S3互換ストレージ (MinIO) により、本番移行時のコード変更を最小化。
+                </div>
+
+                <h3>サービス一覧</h3>
+
+                <div class="docker-service">
+                    <div class="docker-icon">🐘</div>
+                    <div class="docker-info">
+                        <div class="name">postgres</div>
+                        <div class="port">localhost:5432</div>
+                        <div class="desc">PostgreSQL 15 - メインデータベース</div>
+                    </div>
+                </div>
+
+                <div class="docker-service">
+                    <div class="docker-icon">🔴</div>
+                    <div class="docker-info">
+                        <div class="name">redis</div>
+                        <div class="port">localhost:6379</div>
+                        <div class="desc">Redis 7 - BullMQ ジョブキュー</div>
+                    </div>
+                </div>
+
+                <div class="docker-service">
+                    <div class="docker-icon">📦</div>
+                    <div class="docker-info">
+                        <div class="name">minio</div>
+                        <div class="port">localhost:9000 (API) / localhost:9001 (Console)</div>
+                        <div class="desc">MinIO - S3互換オブジェクトストレージ（画像保存）</div>
+                    </div>
+                </div>
+
+                <div class="docker-service">
+                    <div class="docker-icon">📊</div>
+                    <div class="docker-info">
+                        <div class="name">bull-board</div>
+                        <div class="port">localhost:3001</div>
+                        <div class="desc">Bull Board - ジョブキュー管理UI</div>
+                    </div>
+                </div>
+
+                <h3>docker-compose.yml</h3>
+                <pre><code>version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: als_user
+      POSTGRES_PASSWORD: als_password
+      POSTGRES_DB: als_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U als_user -d als_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minio_access_key
+      MINIO_ROOT_PASSWORD: minio_secret_key
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 初回起動時にバケット作成
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minio_access_key minio_secret_key;
+      mc mb local/images --ignore-existing;
+      mc anonymous set download local/images;
+      "
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:</code></pre>
+
+                <h3>起動コマンド</h3>
+                <pre><code># 初回セットアップ
+./scripts/bootstrap.sh
+
+# 開発環境起動
+docker-compose up -d
+
+# ログ確認
+docker-compose logs -f
+
+# 停止
+docker-compose down</code></pre>
+            </div>
+        </div>
+
+        <!-- DB設計 -->
+        <div id="database" class="tab-content">
+            <div class="card">
+                <h2>データベース設計（Prisma Schema）</h2>
+
+                <h3>ER図（概要）</h3>
+                <pre><code>┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│   sources   │──1:N──│  products   │──1:N──│  listings   │
+│ (仕入元情報) │       │ (統一商品)   │       │ (出品情報)   │
+└─────────────┘       └─────────────┘       └─────────────┘
+                             │
+                             │1:N
+                             ▼
+                      ┌─────────────┐
+                      │  job_logs   │
+                      │ (ジョブログ) │
+                      └─────────────┘
+
+┌─────────────────┐       ┌─────────────────┐
+│ price_settings  │       │shipping_policies│
+│ (価格計算設定)   │       │ (eBay送料設定)  │
+└─────────────────┘       └─────────────────┘</code></pre>
+
+                <h3>Prisma Schema</h3>
+                <pre><code>// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// 仕入元情報
+// ========================================
+model Source {
+  id        String   @id @default(cuid())
+  type      SourceType
+  name      String
+  url       String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+
+  @@map("sources")
+}
+
+enum SourceType {
+  MERCARI
+  YAHOO_AUCTION
+  YAHOO_FLEA
+  RAKUMA
+  RAKUTEN
+  AMAZON
+  TAKAYAMA
+  JOSHIN
+  OTHER
+}
+
+// ========================================
+// 統一商品モデル
+// ========================================
+model Product {
+  id                String   @id @default(cuid())
+
+  // ソース情報
+  sourceId          String
+  source            Source   @relation(fields: [sourceId], references: [id])
+  sourceItemId      String   // 元サイトの商品ID
+  sourceUrl         String
+  sourceHash        String?  // 差分検知用ハッシュ
+
+  // 基本情報（原文）
+  title             String
+  description       String   @db.Text
+  price             Int      // 仕入価格（円）
+
+  // 翻訳済み情報
+  titleEn           String?
+  descriptionEn     String?  @db.Text
+
+  // 商品属性
+  category          String?
+  brand             String?
+  condition         String?
+  weight            Int?     // グラム
+  attributes        Json     @default("{}")  // AI抽出属性
+
+  // 画像
+  images            String[] // 元画像URL
+  processedImages   String[] // 白抜き後URL（MinIO/S3）
+
+  // ステータス
+  status            ProductStatus @default(PENDING_SCRAPE)
+  translationStatus ProcessStatus @default(PENDING)
+  imageStatus       ProcessStatus @default(PENDING)
+
+  // タイムスタンプ
+  scrapedAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  listings          Listing[]
+  jobLogs           JobLog[]
+
+  @@unique([sourceId, sourceItemId])
+  @@index([status])
+  @@index([sourceHash])
+  @@map("products")
+}
+
+enum ProductStatus {
+  PENDING_SCRAPE
+  PROCESSING_IMAGE
+  TRANSLATING
+  READY_TO_REVIEW
+  APPROVED
+  PUBLISHING
+  ACTIVE
+  SOLD
+  OUT_OF_STOCK
+  ERROR
+  DELETED
+}
+
+enum ProcessStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  ERROR
+}
+
+// ========================================
+// 出品情報（マーケットプレイス別）
+// ========================================
+model Listing {
+  id              String   @id @default(cuid())
+
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+
+  marketplace     Marketplace
+  marketplaceId   String?  // eBay/Joom の出品ID
+
+  // 価格情報
+  listingPrice    Float    // 出品価格（USD）
+  shippingCost    Float?   // 送料
+  currency        String   @default("USD")
+
+  // マーケット固有データ（JSONB）
+  marketplaceData Json     @default("{}")
+
+  // ステータス
+  status          ListingStatus @default(DRAFT)
+  errorMessage    String?
+
+  // タイムスタンプ
+  listedAt        DateTime?
+  soldAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productId, marketplace])
+  @@index([marketplace, status])
+  @@map("listings")
+}
+
+enum Marketplace {
+  JOOM
+  EBAY
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_PUBLISH
+  PUBLISHING
+  ACTIVE
+  PAUSED
+  SOLD
+  ENDED
+  ERROR
+}
+
+// ========================================
+// ジョブログ
+// ========================================
+model JobLog {
+  id          String   @id @default(cuid())
+
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+
+  jobId       String   // BullMQ Job ID
+  queueName   String
+  jobType     String
+  status      JobStatus
+
+  payload     Json     @default("{}")
+  result      Json?
+  errorMessage String?  @db.Text
+
+  startedAt   DateTime
+  completedAt DateTime?
+  duration    Int?     // ミリ秒
+
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+  @@index([queueName, status])
+  @@index([createdAt])
+  @@map("job_logs")
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+}
+
+// ========================================
+// 価格計算設定
+// ========================================
+model PriceSetting {
+  id              String   @id @default(cuid())
+
+  name            String   @unique
+  marketplace     Marketplace
+
+  // 手数料
+  platformFeeRate Float    // プラットフォーム手数料率
+  paymentFeeRate  Float    // 決済手数料率
+
+  // マージン
+  targetProfitRate Float   // 目標利益率
+  adRate          Float    @default(0) // 広告費率
+
+  // 為替
+  exchangeRate    Float    // USD/JPY
+  exchangeBuffer  Float    @default(0) // 為替バッファ
+
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("price_settings")
+}
+
+// ========================================
+// eBay シッピングポリシー
+// ========================================
+model ShippingPolicy {
+  id              String   @id @default(cuid())
+
+  name            String
+  region          String   // US, EU, ASIA など
+
+  // 配送方法
+  carrier         String   // ePacket, Cpass, EMS など
+
+  // 送料テーブル（重量別）
+  shippingTable   Json     // { "100": 880, "200": 1060, ... }
+
+  // 燃油サーチャージ
+  fuelSurcharge   Float    @default(0)
+
+  // 関税設定
+  dutyThreshold   Float?   // 関税閾値（USD）
+  dutyRate        Float?   // 関税率
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("shipping_policies")
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- 型定義・スキーマ -->
+        <div id="schema" class="tab-content">
+            <div class="card">
+                <h2>Zod スキーマ定義（バリデーション）</h2>
+
+                <div class="info-box">
+                    外部データ（スクレイピング結果、APIレスポンス）は必ずZodを通して内部型に変換。これにより型安全性を担保。
+                </div>
+
+                <h3>統一商品モデル（UniversalProduct）</h3>
+                <div class="schema-block">
+                    <h4>packages/schema/src/product.ts</h4>
+                    <pre><code>import { z } from 'zod';
+
+// ソースタイプ
+export const SourceTypeSchema = z.enum([
+  'mercari',
+  'yahoo_auction',
+  'yahoo_flea',
+  'rakuma',
+  'rakuten',
+  'amazon',
+  'takayama',
+  'joshin',
+  'other',
+]);
+
+// 商品コンディション
+export const ConditionSchema = z.enum([
+  'new',
+  'like_new',
+  'good',
+  'fair',
+  'poor',
+]);
+
+// AI抽出属性
+export const ExtractedAttributesSchema = z.object({
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  color: z.string().optional(),
+  size: z.string().optional(),
+  material: z.string().optional(),
+  year: z.number().optional(),
+  gender: z.enum(['mens', 'womens', 'unisex']).optional(),
+  // 信頼度スコア
+  confidence: z.number().min(0).max(1).optional(),
+  // 抽出元
+  extractedBy: z.enum(['ai', 'manual', 'source']).optional(),
+});
+
+// 統一商品モデル
+export const UniversalProductSchema = z.object({
+  // ソース情報
+  sourceType: SourceTypeSchema,
+  sourceUrl: z.string().url(),
+  sourceItemId: z.string(),
+  sourceHash: z.string().optional(),
+
+  // 基本情報
+  title: z.string().min(1).max(500),
+  description: z.string(),
+  price: z.number().positive(), // 円
+
+  // 翻訳済み
+  titleEn: z.string().optional(),
+  descriptionEn: z.string().optional(),
+
+  // 商品属性
+  category: z.string().optional(),
+  brand: z.string().optional(),
+  condition: ConditionSchema.optional(),
+  weight: z.number().positive().optional(), // グラム
+
+  // AI抽出属性
+  attributes: ExtractedAttributesSchema.default({}),
+
+  // 画像
+  images: z.array(z.string().url()).min(1),
+  processedImages: z.array(z.string().url()).default([]),
+});
+
+// 型エクスポート
+export type SourceType = z.infer<typeof SourceTypeSchema>;
+export type Condition = z.infer<typeof ConditionSchema>;
+export type ExtractedAttributes = z.infer<typeof ExtractedAttributesSchema>;
+export type UniversalProduct = z.infer<typeof UniversalProductSchema>;
+
+// バリデーション関数
+export function parseProduct(data: unknown): UniversalProduct {
+  return UniversalProductSchema.parse(data);
+}
+
+export function safeParseProduct(data: unknown) {
+  return UniversalProductSchema.safeParse(data);
+}</code></pre>
+                </div>
+
+                <h3>マーケットプレイス固有スキーマ</h3>
+                <div class="schema-block">
+                    <h4>packages/schema/src/listing.ts</h4>
+                    <pre><code>import { z } from 'zod';
+
+// Joom出品データ
+export const JoomListingDataSchema = z.object({
+  joomCategoryId: z.string(),
+  joomAttributes: z.record(z.string()).default({}),
+  shippingDays: z.number().default(14),
+});
+
+// eBay出品データ
+export const EbayListingDataSchema = z.object({
+  ebayCategoryId: z.string(),
+  itemSpecifics: z.record(z.string()).default({}),
+  shippingPolicyId: z.string().optional(),
+  returnPolicyId: z.string().optional(),
+  paymentPolicyId: z.string().optional(),
+  conditionId: z.number(), // eBay Condition ID
+  listingFormat: z.enum(['FixedPrice', 'Auction']).default('FixedPrice'),
+
+  // DDU/DDP価格
+  dduPrice: z.number().optional(),
+  ddpPrice: z.number().optional(),
+  dutyAmount: z.number().optional(),
+});
+
+// マーケットプレイス別出品情報
+export const ListingSchema = z.object({
+  productId: z.string(),
+  marketplace: z.enum(['joom', 'ebay']),
+
+  listingPrice: z.number().positive(),
+  shippingCost: z.number().nonnegative().optional(),
+  currency: z.string().default('USD'),
+
+  // マーケット固有データ（discriminated union）
+  marketplaceData: z.union([
+    JoomListingDataSchema,
+    EbayListingDataSchema,
+  ]),
+});
+
+export type JoomListingData = z.infer<typeof JoomListingDataSchema>;
+export type EbayListingData = z.infer<typeof EbayListingDataSchema>;
+export type Listing = z.infer<typeof ListingSchema>;</code></pre>
+                </div>
+
+                <h3>ジョブペイロードスキーマ</h3>
+                <div class="schema-block">
+                    <h4>packages/schema/src/job.ts</h4>
+                    <pre><code>import { z } from 'zod';
+
+// スクレイピングジョブ
+export const ScrapeJobPayloadSchema = z.object({
+  url: z.string().url(),
+  sourceType: z.string(),
+  priority: z.number().default(0),
+  retryCount: z.number().default(0),
+});
+
+// 画像処理ジョブ
+export const ImageJobPayloadSchema = z.object({
+  productId: z.string(),
+  imageUrls: z.array(z.string().url()),
+  removeBackground: z.boolean().default(true),
+});
+
+// 翻訳ジョブ
+export const TranslateJobPayloadSchema = z.object({
+  productId: z.string(),
+  title: z.string(),
+  description: z.string(),
+  extractAttributes: z.boolean().default(true),
+});
+
+// 出品ジョブ
+export const PublishJobPayloadSchema = z.object({
+  productId: z.string(),
+  marketplace: z.enum(['joom', 'ebay']),
+  listingData: z.record(z.unknown()),
+});
+
+// 在庫監視ジョブ
+export const InventoryJobPayloadSchema = z.object({
+  productId: z.string(),
+  sourceUrl: z.string().url(),
+  currentHash: z.string().optional(),
+});
+
+export type ScrapeJobPayload = z.infer<typeof ScrapeJobPayloadSchema>;
+export type ImageJobPayload = z.infer<typeof ImageJobPayloadSchema>;
+export type TranslateJobPayload = z.infer<typeof TranslateJobPayloadSchema>;
+export type PublishJobPayload = z.infer<typeof PublishJobPayloadSchema>;
+export type InventoryJobPayload = z.infer<typeof InventoryJobPayloadSchema>;</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ジョブキュー -->
+        <div id="queue" class="tab-content">
+            <div class="card">
+                <h2>BullMQ ジョブキュー設計</h2>
+
+                <div class="consensus-box">
+                    <h4>✅ 3者協議の合意事項</h4>
+                    <ul class="consensus-list">
+                        <li>優先度: publish > inventory > translate > image > scrape</li>
+                        <li>レート制限は外部API規約の下限から逆算、保守的に開始</li>
+                        <li>全キューで再試行回数＋指数バックオフ＋ジッターを固定化</li>
+                        <li>Graceful Shutdown と DLQ を Phase 1 から実装</li>
+                        <li>Bull Board でジョブ可視化</li>
+                    </ul>
+                </div>
+
+                <h3>キュー一覧</h3>
+
+                <div class="queue-card priority-1">
+                    <div class="queue-header">
+                        <span class="queue-name">publish-queue</span>
+                        <span class="queue-priority p1">優先度 1</span>
+                    </div>
+                    <p>Joom/eBay への出品ジョブ</p>
+                    <div class="queue-settings">
+                        <span>レート制限: 5件/分</span>
+                        <span>並列数: 2</span>
+                        <span>リトライ: 3回</span>
+                        <span>バックオフ: 指数（1分→2分→4分）</span>
+                    </div>
+                </div>
+
+                <div class="queue-card priority-2">
+                    <div class="queue-header">
+                        <span class="queue-name">inventory-queue</span>
+                        <span class="queue-priority p2">優先度 2</span>
+                    </div>
+                    <p>在庫監視・価格調整ジョブ（1日3回スケジュール）</p>
+                    <div class="queue-settings">
+                        <span>レート制限: 10件/分</span>
+                        <span>並列数: 3</span>
+                        <span>リトライ: 5回</span>
+                        <span>スケジュール: 10:00, 15:00, 21:00 (±30分ジッター)</span>
+                    </div>
+                </div>
+
+                <div class="queue-card priority-3">
+                    <div class="queue-header">
+                        <span class="queue-name">translate-queue</span>
+                        <span class="queue-priority p3">優先度 3</span>
+                    </div>
+                    <p>翻訳 + AI属性抽出ジョブ</p>
+                    <div class="queue-settings">
+                        <span>レート制限: 20件/分</span>
+                        <span>並列数: 5</span>
+                        <span>リトライ: 3回</span>
+                        <span>タイムアウト: 60秒</span>
+                    </div>
+                </div>
+
+                <div class="queue-card priority-4">
+                    <div class="queue-header">
+                        <span class="queue-name">image-queue</span>
+                        <span class="queue-priority p4">優先度 4</span>
+                    </div>
+                    <p>画像ダウンロード + 白抜き処理</p>
+                    <div class="queue-settings">
+                        <span>レート制限: なし</span>
+                        <span>並列数: 3</span>
+                        <span>リトライ: 3回</span>
+                        <span>タイムアウト: 120秒</span>
+                    </div>
+                </div>
+
+                <div class="queue-card priority-5">
+                    <div class="queue-header">
+                        <span class="queue-name">scrape-queue</span>
+                        <span class="queue-priority p5">優先度 5</span>
+                    </div>
+                    <p>商品情報スクレイピング（住宅用Proxy経由）</p>
+                    <div class="queue-settings">
+                        <span>レート制限: 10件/分</span>
+                        <span>並列数: 2</span>
+                        <span>リトライ: 5回</span>
+                        <span>バックオフ: 指数＋ジッター（30秒→1分→2分）</span>
+                    </div>
+                </div>
+
+                <h3>Dead Letter Queue (DLQ)</h3>
+                <pre><code>// リトライ回数超過時の処理
+const deadLetterQueue = new Queue('dead-letter-queue', { connection });
+
+// 各キューで DLQ 設定
+const scrapeQueue = new Queue('scrape-queue', {
+  connection,
+  defaultJobOptions: {
+    attempts: 5,
+    backoff: {
+      type: 'exponential',
+      delay: 30000, // 30秒
+    },
+    removeOnComplete: 100,
+    removeOnFail: false, // 失敗ジョブは保持
+  },
+});
+
+// 失敗時に DLQ へ移動
+scrapeQueue.on('failed', async (job, err) => {
+  if (job.attemptsMade >= job.opts.attempts) {
+    await deadLetterQueue.add('dead-letter', {
+      originalQueue: 'scrape-queue',
+      jobId: job.id,
+      payload: job.data,
+      error: err.message,
+      failedAt: new Date().toISOString(),
+    });
+  }
+});</code></pre>
+
+                <h3>Graceful Shutdown</h3>
+                <pre><code>// apps/worker/src/graceful-shutdown.ts
+import { Worker } from 'bullmq';
+
+const workers: Worker[] = [];
+
+export function registerWorker(worker: Worker) {
+  workers.push(worker);
+}
+
+async function shutdown() {
+  console.log('Graceful shutdown initiated...');
+
+  // 新規ジョブの受付停止
+  await Promise.all(workers.map(w => w.pause()));
+
+  // 処理中のジョブ完了を待機（最大30秒）
+  await Promise.all(workers.map(w => w.close()));
+
+  console.log('All workers closed. Exiting.');
+  process.exit(0);
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);</code></pre>
+            </div>
+        </div>
+
+        <!-- 環境変数 -->
+        <div id="env" class="tab-content">
+            <div class="card">
+                <h2>環境変数管理</h2>
+
+                <h3>命名規約</h3>
+                <table class="env-table">
+                    <tr>
+                        <th>プレフィックス</th>
+                        <th>用途</th>
+                    </tr>
+                    <tr>
+                        <td>DATABASE_</td>
+                        <td>データベース接続情報</td>
+                    </tr>
+                    <tr>
+                        <td>REDIS_</td>
+                        <td>Redis接続情報</td>
+                    </tr>
+                    <tr>
+                        <td>S3_</td>
+                        <td>オブジェクトストレージ（MinIO/S3）</td>
+                    </tr>
+                    <tr>
+                        <td>PROXY_</td>
+                        <td>住宅用プロキシ設定</td>
+                    </tr>
+                    <tr>
+                        <td>OPENAI_</td>
+                        <td>OpenAI API（翻訳）</td>
+                    </tr>
+                    <tr>
+                        <td>JOOM_</td>
+                        <td>Joom API認証</td>
+                    </tr>
+                    <tr>
+                        <td>EBAY_</td>
+                        <td>eBay API認証</td>
+                    </tr>
+                </table>
+
+                <h3>.env.example</h3>
+                <pre><code># ========================================
+# Database
+# ========================================
+DATABASE_URL="postgresql://als_user:als_password@localhost:5432/als_development"
+
+# ========================================
+# Redis
+# ========================================
+REDIS_URL="redis://localhost:6379"
+
+# ========================================
+# Object Storage (MinIO / S3)
+# ========================================
+S3_ENDPOINT="http://localhost:9000"
+S3_ACCESS_KEY="minio_access_key"
+S3_SECRET_KEY="minio_secret_key"
+S3_BUCKET="images"
+S3_REGION="us-east-1"
+
+# ========================================
+# Proxy (本番のみ)
+# ========================================
+# PROXY_HOST="gate.smartproxy.com"
+# PROXY_PORT="7000"
+# PROXY_USER="your_username"
+# PROXY_PASS="your_password"
+
+# ========================================
+# OpenAI (翻訳・属性抽出)
+# ========================================
+OPENAI_API_KEY="sk-..."
+
+# ========================================
+# Joom API
+# ========================================
+# JOOM_MERCHANT_ID="..."
+# JOOM_API_KEY="..."
+
+# ========================================
+# eBay API
+# ========================================
+# EBAY_CLIENT_ID="..."
+# EBAY_CLIENT_SECRET="..."
+# EBAY_REFRESH_TOKEN="..."
+
+# ========================================
+# App Settings
+# ========================================
+NODE_ENV="development"
+LOG_LEVEL="debug"
+API_PORT="3000"
+BULL_BOARD_PORT="3001"</code></pre>
+
+                <h3>環境変数バリデーション</h3>
+                <pre><code>// packages/config/src/env.ts
+import { z } from 'zod';
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+
+  // Database
+  DATABASE_URL: z.string().url(),
+
+  // Redis
+  REDIS_URL: z.string().url(),
+
+  // S3
+  S3_ENDPOINT: z.string().url(),
+  S3_ACCESS_KEY: z.string().min(1),
+  S3_SECRET_KEY: z.string().min(1),
+  S3_BUCKET: z.string().min(1),
+
+  // Optional: Proxy
+  PROXY_HOST: z.string().optional(),
+  PROXY_PORT: z.string().optional(),
+  PROXY_USER: z.string().optional(),
+  PROXY_PASS: z.string().optional(),
+
+  // OpenAI
+  OPENAI_API_KEY: z.string().startsWith('sk-').optional(),
+
+  // Ports
+  API_PORT: z.string().default('3000'),
+  BULL_BOARD_PORT: z.string().default('3001'),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+});
+
+export const env = envSchema.parse(process.env);
+export type Env = z.infer<typeof envSchema>;</code></pre>
+
+                <div class="warning-box">
+                    <strong>ログマスク対象:</strong> PROXY_PASS, S3_SECRET_KEY, OPENAI_API_KEY, EBAY_CLIENT_SECRET はログに出力しない。Pinoのredactオプションで設定。
+                </div>
+            </div>
+        </div>
+
+        <!-- 実装ロードマップ -->
+        <div id="roadmap" class="tab-content">
+            <div class="card">
+                <h2>Phase 1 実装ロードマップ</h2>
+
+                <div class="info-box">
+                    Phase 1 の目標は「開発者が迷わずに機能追加できる、堅牢な土台」を作ること。
+                </div>
+
+                <h3>Week 1: プロジェクト初期化 & インフラ</h3>
+                <ol class="step-list">
+                    <li>
+                        <strong>Turborepo 初期化</strong><br>
+                        <code>npx create-turbo@latest</code> でモノレポ作成、パッケージ構成整備
+                    </li>
+                    <li>
+                        <strong>Docker Compose 作成</strong><br>
+                        Postgres, Redis, MinIO の設定、ヘルスチェック、ボリューム設定
+                    </li>
+                    <li>
+                        <strong>共有パッケージ作成</strong><br>
+                        @als/schema, @als/database, @als/logger, @als/config の骨格
+                    </li>
+                    <li>
+                        <strong>bootstrap.sh 作成</strong><br>
+                        初回セットアップの自動化（依存インストール、DB作成、マイグレーション）
+                    </li>
+                </ol>
+
+                <h3>Week 2: DB・キュー・基本ロジック</h3>
+                <ol class="step-list">
+                    <li>
+                        <strong>Prisma Schema 定義</strong><br>
+                        全テーブル定義、マイグレーション実行、シードデータ投入
+                    </li>
+                    <li>
+                        <strong>Zod スキーマ実装</strong><br>
+                        UniversalProduct, Listing, JobPayload の全スキーマ
+                    </li>
+                    <li>
+                        <strong>BullMQ セットアップ</strong><br>
+                        5キュー定義、Graceful Shutdown、DLQ実装
+                    </li>
+                    <li>
+                        <strong>Bull Board 配置</strong><br>
+                        ジョブ可視化UI、管理画面への組み込み
+                    </li>
+                    <li>
+                        <strong>最小疎通確認</strong><br>
+                        URL受付 → キュー投入 → DB保存 の一本道を通す
+                    </li>
+                </ol>
+
+                <h3>成果物チェックリスト</h3>
+                <table>
+                    <tr>
+                        <th>成果物</th>
+                        <th>完了基準</th>
+                    </tr>
+                    <tr>
+                        <td>モノレポ構成</td>
+                        <td><code>turbo run build</code> が全パッケージで成功</td>
+                    </tr>
+                    <tr>
+                        <td>Docker環境</td>
+                        <td><code>docker-compose up</code> で全サービス起動</td>
+                    </tr>
+                    <tr>
+                        <td>DBマイグレーション</td>
+                        <td><code>prisma migrate deploy</code> が成功</td>
+                    </tr>
+                    <tr>
+                        <td>Zodバリデーション</td>
+                        <td>全スキーマの単体テストがパス</td>
+                    </tr>
+                    <tr>
+                        <td>BullMQキュー</td>
+                        <td>5キューが Bull Board で可視化</td>
+                    </tr>
+                    <tr>
+                        <td>Graceful Shutdown</td>
+                        <td>SIGTERM で処理中ジョブ完了後に終了</td>
+                    </tr>
+                    <tr>
+                        <td>疎通確認</td>
+                        <td>URL → DB保存 のE2Eが動作</td>
+                    </tr>
+                </table>
+
+                <h3>次のフェーズへの引き継ぎ</h3>
+                <p>Phase 1 完了後、以下が Phase 2 で実装可能な状態になる：</p>
+                <ul>
+                    <li>Chrome拡張からのURL受付（API Ready）</li>
+                    <li>スクレイピングワーカー実装（キュー Ready）</li>
+                    <li>画像処理サービス連携（S3 Ready）</li>
+                    <li>翻訳ジョブ実装（スキーマ Ready）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>作成日: 2026-02-04 | 3者AI協議（Claude + GPT-5 + Gemini）による実装計画</p>
+        <div class="nav-links" style="margin-top: 15px;">
+            <a href="index.html">← 設計計画書</a>
+        </div>
+    </footer>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
