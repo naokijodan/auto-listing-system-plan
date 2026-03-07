@@ -245,14 +245,14 @@
         <div class="summary" aria-label="全体進捗">
           <div class="summary-header">
             <div>全体進捗</div>
-            <div>30%</div>
+            <div>35%</div>
           </div>
-          <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30">
-            <div class="fill" style="--percent: 30%"></div>
+          <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35">
+            <div class="fill" style="--percent: 35%"></div>
           </div>
         </div>
         <div class="meta">
-          <div><strong>最終更新:</strong> 2026-03-07</div>
+          <div><strong>最終更新:</strong> 2026-03-08</div>
           <div><strong>作成:</strong> Claude + GPT-5 + Gemini（3者AI協議）</div>
           <div><strong>プロジェクト開始:</strong> 2026-02-04</div>
         </div>
@@ -307,7 +307,7 @@
                   <td>Phase 2</td>
                   <td>2/18〜3/20</td>
                   <td>Joom出品パイプライン完成</td>
-                  <td>🔴 50%（今ここ）</td>
+                  <td>🟡 65%（今ここ）</td>
                 </tr>
                 <tr>
                   <td>Phase 3</td>
@@ -362,10 +362,10 @@
           <div class="card-header phase-header">
             <h2>Phase 2: Joom出品パイプライン完成</h2>
             <span class="badge now"><span class="dot" aria-hidden="true"></span> 今ここ</span>
-            <span class="badge" style="color: var(--accent-red)">🔴 50%</span>
+            <span class="badge" style="color: var(--accent-orange)">🟡 65%</span>
           </div>
           <div class="phase-progress">
-            <div class="progress-bar" aria-hidden="true"><div class="fill" style="--percent: 50%"></div></div>
+            <div class="progress-bar" aria-hidden="true"><div class="fill" style="--percent: 65%"></div></div>
           </div>
           <div class="card-body">
             <h3>目標</h3>
@@ -383,43 +383,57 @@
 
             <h3>サブタスク一覧</h3>
 
-            <h4>2-1. 画像パイプラインの結合 <span class="badge pending">🔴 未完了</span></h4>
+            <h4>2-1. 画像パイプラインの結合 <span class="badge partial">🟡 部分実装（結合テスト未了）</span></h4>
             <div class="callout">
-              <p><strong>問題</strong>: Product DBに画像URLがあるが、出品時にmarketplaceDataに渡されていない</p>
-              <p><strong>やること</strong>:</p>
+              <p><strong>現状</strong>: 画像処理パイプライン自体は実装済み（image-optimizer.ts 441行、storage.ts 743行）。processImages()→downloadImages()→optimizeImagesParallel()→uploadFile()のフロー完成。ただし、joom-publish-service.ts L431-433で画像URLが空の場合のフォールバックが不十分。</p>
+              <p><strong>実装済みファイル</strong>:</p>
               <ul>
-                <li>joom-publish-service.ts の createJoomListing で Product.images を読み取り、Joom API の main_image_url / extra_image_urls に設定する</li>
-                <li>画像URLの有効性チェック（HEAD リクエスト）</li>
-                <li>無効な画像URLのフォールバック処理</li>
+                <li>apps/worker/src/lib/image-optimizer.ts: WebP変換、リサイズ（1200x1200 max）、白背景変換</li>
+                <li>apps/worker/src/lib/storage.ts: S3/MinIOアップロード、公開URL返却</li>
+                <li>joom-publish-service.ts L287-316: processImagesForListing()</li>
+              </ul>
+              <p><strong>残り作業</strong>:</p>
+              <ul>
+                <li>Product.images → marketplaceData.joomImages の結合テスト（本番環境で画像が表示されるか確認）</li>
+                <li>画像URLが空の場合のエラーハンドリング改善</li>
+                <li>S3/MinIOの本番環境設定確認</li>
               </ul>
               <p><strong>完了基準</strong>: Joomの商品ページに画像が表示される</p>
-              <p><strong>見積もり</strong>: 1.5日</p>
+              <p><strong>見積もり</strong>: 1日</p>
               <p><strong>依存</strong>: なし</p>
             </div>
 
-            <h4>2-2. 翻訳エンジンの実装 <span class="badge pending">🔴 未完了</span></h4>
+            <h4>2-2. 翻訳エンジンの統合テスト <span class="badge partial">🟡 実装済み・統合テスト未了</span></h4>
             <div class="callout">
-              <p><strong>問題</strong>: 翻訳機能が完全に未実装（APIキー未設定、プロンプト未作成）</p>
-              <p><strong>やること</strong>:</p>
+              <p><strong>現状</strong>: 翻訳機能は実装済み（85%完了）。enrichProduct()がOpenAI GPT-4oで翻訳・属性抽出・禁制品チェックを実行。APIキーも.envに設定済み。</p>
+              <p><strong>実装済みファイル</strong>:</p>
               <ul>
-                <li>OpenAI APIキーの設定（環境変数 OPENAI_API_KEY）</li>
-                <li>翻訳プロンプトの作成（商品タイトル用、説明文用）</li>
-                <li>packages/enrichment/src/translator.ts の enrichProduct 関数を実装</li>
-                <li>出品フローに翻訳ステップを組み込む</li>
+                <li>packages/enrichment/src/translator.ts（356行）: enrichProduct() L188-274、translateToEnglish() L279-325</li>
+                <li>packages/enrichment/src/index.ts（157行）: enrichProductFull()（ルール→AI→マージの3段階処理）</li>
+                <li>翻訳プロンプト: DB格納方式（3段階フォールバック: カテゴリ別→デフォルト→ハードコード）</li>
+                <li>.env: OPENAI_API_KEY設定済み、OPENAI_MODEL=gpt-4o</li>
+                <li>キュー設定: TRANSLATE queue (concurrency=5, rateLimit=20/分, attempts=3)</li>
+              </ul>
+              <p><strong>残り作業</strong>:</p>
+              <ul>
+                <li>Joom出品フローでenrichProduct()が正しく呼ばれているか本番確認</li>
+                <li>翻訳プロンプトのシードデータ投入（seed-prompts.tsの実行）</li>
+                <li>翻訳品質の検証（5商品で日→英翻訳の精度確認）</li>
+                <li>本番環境のCoolifyにOPENAI_API_KEY環境変数が設定されているか確認</li>
               </ul>
               <p><strong>完了基準</strong>: 日本語の商品タイトル・説明文が自然な英語に翻訳される</p>
-              <p><strong>見積もり</strong>: 2日</p>
+              <p><strong>見積もり</strong>: 1日</p>
               <p><strong>依存</strong>: なし（2-1と並列可能）</p>
             </div>
 
             <h4>2-3. AI属性抽出の補完 <span class="badge partial">🟡 部分完了</span></h4>
             <div class="callout">
-              <p><strong>問題</strong>: Joom必須属性（material, size, color等）が一部欠落</p>
+              <p><strong>現状</strong>: enrichProduct()内でAI属性抽出も同時実行される設計。Joom必須属性の一部が欠落する可能性あり。</p>
               <p><strong>やること</strong>:</p>
               <ul>
                 <li>packages/enrichment/src/item-specifics/extractor.ts の抽出ロジック改善</li>
-                <li>Joom用の必須属性リスト定義</li>
-                <li>商品タイトル・説明文からAIで属性を自動抽出</li>
+                <li>Joom用の必須属性リスト定義（material, size, color等）</li>
+                <li>抽出結果の検証テスト</li>
               </ul>
               <p><strong>完了基準</strong>: Joomの必須属性が全て埋まった状態で出品される</p>
               <p><strong>見積もり</strong>: 1日</p>
@@ -442,7 +456,7 @@
 
             <h4>2-5. 取り下げ機能の安定化 <span class="badge fixed">🔧 バグ修正済み・未検証</span></h4>
             <div class="callout">
-              <p><strong>問題</strong>: delete-product のtypeフィールド欠落バグを3/7に修正（commit c5dca24d）</p>
+              <p><strong>現状</strong>: delete-product のtypeフィールド欠落バグを3/7に修正（commit c5dca24d）。enable/disableはJoom API v3対応済み（commit 292d9e9d: POST /products/update?id={id} + { enabled: true/false }）。</p>
               <p><strong>やること</strong>:</p>
               <ul>
                 <li>disable-product / delete-product の動作確認テスト</li>
@@ -454,22 +468,45 @@
               <p><strong>依存</strong>: 2-4（出品後に取り下げテスト）</p>
             </div>
 
-            <h4>2-6. 在庫・注文管理の基本実装 <span class="badge pending">🔴 未完了</span></h4>
+            <h4>2-6. 在庫・注文管理の統合テスト <span class="badge partial">🟡 実装済み・本番テスト未了</span></h4>
             <div class="callout">
-              <p><strong>問題</strong>: 注文取得APIエンドポイント修正済み（3/7）、在庫管理は未実装</p>
-              <p><strong>やること</strong>:</p>
+              <p><strong>現状</strong>: 在庫管理は75%実装済み。inventory-checker.ts（721行）で仕入元在庫チェック→自動取り下げが実装。inventory-alert-service.tsで24時間待機後の自動再開機構あり。注文処理もorder-processor.tsで実装済み。価格計算はPricingPipeline（joom-strategy.ts、ebay-strategy.ts）で為替・手数料・利益率を計算。</p>
+              <p><strong>実装済みファイル</strong>:</p>
               <ul>
-                <li>Joom注文取得APIの動作確認（/orders/list エンドポイント）</li>
-                <li>注文受信時のListing.status更新</li>
-                <li>在庫0時の自動disable処理（BullMQジョブ）</li>
-                <li>仕入元の在庫確認スケジューラー（基本版：1日3回）</li>
+                <li>apps/worker/src/lib/inventory-checker.ts（721行）: checkSingleProductInventory()</li>
+                <li>apps/worker/src/lib/inventory-alert-service.ts: 自動停止・再開機構</li>
+                <li>apps/worker/src/processors/order-processor.ts: 注文受信→Sale作成→在庫イベント</li>
+                <li>apps/worker/src/processors/inventory-sync.ts: マルチチャネル在庫同期</li>
+                <li>apps/worker/src/lib/pricing/strategies/joom-strategy.ts: Joom価格計算</li>
+                <li>schema.prisma: SupplierSource, Order, InventoryEvent, MarketplaceSyncState モデル完備</li>
+              </ul>
+              <p><strong>残り作業</strong>:</p>
+              <ul>
+                <li>Joom注文取得APIの動作確認（/orders/list エンドポイント: 3/7修正後404返却あり、要再確認）</li>
+                <li>在庫チェックスケジューラーの本番起動確認</li>
+                <li>在庫切れ→自動disable→在庫復活→自動再開の一連フロー本番テスト</li>
+                <li>PricingPipelineの本番出力確認（赤字にならないか）</li>
               </ul>
               <p><strong>完了基準</strong>: 注文が取得でき、在庫切れ商品が自動で取り下げられる</p>
-              <p><strong>見積もり</strong>: 2日</p>
+              <p><strong>見積もり</strong>: 1.5日</p>
               <p><strong>依存</strong>: 2-5</p>
             </div>
 
-            <p><strong>Phase 2 合計見積もり:</strong> 9日（3/7〜3/20）</p>
+            <h4>2-7. 本番環境デプロイ・環境変数整合性 <span class="badge pending">🔴 未完了</span></h4>
+            <div class="callout">
+              <p><strong>問題</strong>: ローカルでは動くが本番（Coolify）で動作しない可能性。過去にSandbox/Production環境変数不整合でeBay全停止した前例あり。</p>
+              <p><strong>やること</strong>:</p>
+              <ul>
+                <li>Coolify Worker環境変数の確認（OPENAI_API_KEY, S3設定, JOOM_*設定）</li>
+                <li>API/Worker/Web間の環境変数整合性チェック</li>
+                <li>Worker再デプロイ後の動作確認</li>
+              </ul>
+              <p><strong>完了基準</strong>: 本番環境で画像処理・翻訳・出品・取り下げが動作する</p>
+              <p><strong>見積もり</strong>: 0.5日</p>
+              <p><strong>依存</strong>: 2-1, 2-2</p>
+            </div>
+
+            <p><strong>Phase 2 合計見積もり:</strong> 7.5日（3/8〜3/20） ※前回9日→調査で実装済み部分が判明し短縮</p>
           </div>
         </section>
 
